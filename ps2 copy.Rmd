@@ -1,14 +1,12 @@
 ---
 title: "Psych 251 PS2: Tidying Data"
-author: "Kayla Good"
-date: "October 13, 2019"
+author: "Andrew Lampinen"
+date: "September 27, 2018"
 output:
   html_document:
     toc: true
     toc_float: true
 ---
-
-**Note from Kayla:** I worked on this problem set with four other members of the course - Nicky Sullivan, Emily Kubota, Justin Yuan, and Leili Mortazavi.
 
 In this assignment we'll learn about `dplyr` and `tidyr`, two packages from the `tidyverse` that allow elegant and easily understandable data tidying and manipulation.
 We'll do this by working through the steps of loading an actual dataset, tidying it up, and carrying out some basic analyses.
@@ -120,7 +118,8 @@ Now you try! Fill in the selection criteria to get rid of the "Game" columns, wh
 
 ```{r}
 performance_hyp_d = filtered_d %>% 
-   select(-contains("Game")) # your code here: remove the columns containing "Game" in the name
+   select(-DoNotUseVideoGamePerformanceData,
+         -starts_with("Game")) # your code here: remove the columns containing "Game" in the name
 ```
 
 # Converting to long form
@@ -277,7 +276,7 @@ Now we're finally to reproduce Fig. 2 from Tamir et al., we just need to get the
 ```{r}
 performance_diff_summary_d = performance_diff_d %>%
   group_by(MusicCondition, ConfrontationalGame) %>%
-  summarize(MeanImprovementScore = mean(ImprovementScore, na.rm=T), SEM = sd(ImprovementScore, na.rm = TRUE)/sqrt(length(ImprovementScore[!is.na(ImprovementScore)])))
+  summarize(MeanImprovementScore = mean(ImprovementScore, na.rm=T))
 ```
 
 Let's take a look at your result (if it has `NA` values, how can you fix it?):
@@ -291,8 +290,7 @@ and plot it!
 ```{r TamirFig2}
 ggplot(performance_diff_summary_d, aes(x=ConfrontationalGame, y=MeanImprovementScore, fill=MusicCondition)) +
   geom_bar(position="dodge", stat="identity") + 
-  scale_fill_brewer(palette="Set1") +
-  geom_errorbar(aes(ymin = MeanImprovementScore-SEM, ymax = MeanImprovementScore+SEM), width=.2,      position=position_dodge(.9))
+  scale_fill_brewer(palette="Set1")
 ```
 
 (Bonus: also calculate the SEM in the summary data, and then add errorbars to the plot with `geom_errorbar`!)
@@ -303,5 +301,4 @@ Not quite as exact a replication of the effect as Fig. 1. This concurs with the 
 performance_model = lm(ImprovementScore ~ ConfrontationalGame * MusicCondition, performance_diff_d)
 summary(performance_model)
 ```
-
 
