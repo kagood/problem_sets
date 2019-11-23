@@ -146,8 +146,6 @@ double.sample <- function (x) {
 }
 ```
 
-Now call this function 10k times and find out what happens. 
-
 ```{r}
 num_sim_v2 <- 10000 # creates a vector with number of t-tests to be run
 
@@ -156,6 +154,39 @@ p_values_v2 <- rep(NA, num_sim_v2) # creates a placeholder vector (where the out
 for (i in 1:num_sim_v2) {
    x <- 30
    p_value_v2 <- double.sample(x)
+   p_values_v2[i] <- p_value_v2
+}
+
+p_values_lt05_v2 <- p_values_v2 < 0.05 # creates a vector containing logical values of 'true' where the p-value is less than .05 and 'false' where the p-value is equal to or greater than .05
+
+proportion_05_v2 <- sum(p_values_lt05_v2 == TRUE)/10000 # divides number of p-values that are less than .05 by the total number of p-values, which in this case is 10000
+
+print(proportion_05_v2) # prints the result
+```
+
+```{r}
+# original
+double.sample <- function (x) {
+  test_first_sample <- t.test(x)
+  p_value_final <- test_first_sample$p.value
+  if(p_value_final < .25 & p_value_final > .05){
+    second_sample <- x + rnorm(30)
+    test_second_sample <- t.test(second_sample)
+    p_value_final <- test_second_sample$p.value
+  } else {return(p_value_final)}
+}
+```
+
+Now call this function 10k times and find out what happens. 
+
+```{r}
+num_sim_v2 <- 10000 # creates a vector with number of t-tests to be run
+
+p_values_v2 <- rep(NA, num_sim_v2) # creates a placeholder vector (where the output of the loop will be saved) with 10000 'NA' values
+
+for (i in 1:num_sim_v2) {
+   sample <- rnorm(30)
+   p_value_v2 <- double.sample(sample)
    p_values_v2[i] <- p_value_v2
 }
 
@@ -201,9 +232,10 @@ double_sample_v2 <- function (p, x) { # fixed maybe?
 }
 
 x <- 30
-dud <- sapply(list, double_sample_v2, x=x)
 
 p_values_all <- replicate(10000, sapply(list, double_sample_v2, x=x))
+
+
 ```
 
 ```{r}
