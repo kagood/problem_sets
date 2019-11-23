@@ -214,3 +214,75 @@ print(proportions) # prints the result
 What do you conclude on the basis of this simulation? How bad is this kind of data-dependent policy?
 
 > ANSWER
+
+
+```{r}
+double_sample_loop_one_p <- function (x) {
+  sample_1 <- rnorm(x)
+  test_sample_1 <- t.test(sample_1)
+  p_value_final <- test_sample_1$p.value
+  while (p_value_final < .25 & p_value_final > .05){
+    sample_2 <- append(sample_1, rnorm(x))
+    test_sample_2 <- t.test(sample_2)
+    p_value_final <- test_sample_2$p.value
+    sample_1 <- sample_2
+    x <- length(sample_1)
+  }
+  return(p_value_final)
+}
+
+p_values_loop_one_p <- rep(NA, num_sim_v2) # creates a placeholder vector (where the output of the loop will be saved) with 10000 'NA' values
+
+for (i in 1:num_sim_v2) {
+   sample <- rnorm(30)
+   p_value_v2 <- double.sample(sample)
+   p_values_loop_one_p[i] <- p_value_v2
+}
+
+p_values_lt05_one_p <- p_values_loop_one_p < 0.05 # creates a vector containing logical values of 'true' where the p-value is less than .05 and 'false' where the p-value is equal to or greater than .05
+
+proportion_05_one_p <- sum(p_values_lt05_one_p == TRUE)/10000 # divides number of p-values that are less than .05 by the total number of p-values, which in this case is 10000
+
+print(proportion_05_one_p) # prints the result
+```
+
+
+```{r}
+
+list <- c(.5, .75, 1) # create list of p-values
+
+double_sample_loop_many_ps <- function (p, x) {
+  sample_1 <- rnorm(x)
+  test_sample_1 <- t.test(sample_1)
+  p_value_final <- test_sample_1$p.value
+  while (p_value_final < p & p_value_final > .05){
+    sample_2 <- append(sample_1, rnorm(x))
+    test_sample_2 <- t.test(sample_2)
+    p_value_final <- test_sample_2$p.value
+    sample_1 <- sample_2
+    x <- length(sample_1)
+  }
+  return(p_value_final)
+}
+
+x <- 30
+p_values_many_ps <- replicate(10000, sapply(list, double_sample_other_2, x=x))
+
+p_values_many_ps <- setNames(melt(p_values_many_ps), c("upper_p_value","iteration", "p_value"))
+
+p_values_many_ps<- p_values_many_ps %>% 
+  mutate(upper_p_value = as.factor(upper_p_value)) %>% 
+  mutate(upper_p_value = ifelse(upper_p_value == '1', "p < .5", 
+                            ifelse(upper_p_value == '2', "p < .75",
+                                   ifelse(upper_p_value == '3', "p < 1", NA))))
+
+p_values_many_ps <- p_values_many_ps %>% 
+  mutate(significant = ifelse((p_value < .05), "TRUE", "FALSE")) # creates a column containing logical values of 'true' where the p-value is less than .05 and 'false' where the p-value is equal to or greater than .05
+
+proportions_many_ps <- p_values_many_ps %>% 
+  group_by(upper_p_value) %>% 
+  summarise(proportion_true = sum(significant == "TRUE")/10000) # divides number of p-values that are less than .05 by the total number of p-values, which in this case is 10000
+
+print(proportions_many_ps) # prints the result
+```
+
