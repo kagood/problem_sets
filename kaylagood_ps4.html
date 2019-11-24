@@ -477,14 +477,15 @@ print(rep_proportion_05) # prints the result</code></pre>
 <p>Consider this scenario: you have done an experiment, again with 30 participants (one observation each, just for simplicity). The question is whether the true mean is different from 0. You aren’t going to check the p-value every trial, but let’s say you run 30 - then if the p-value is within the range p &lt; .25 and p &gt; .05, you optionally run 30 more and add those data, then test again. But if the original p value is &lt; .05, you call it a day, and if the original is &gt; .25, you also stop.</p>
 <p>First, write a function that implements this sampling regime.</p>
 <pre class="r"><code>double.sample &lt;- function (x) {
-  test_first_sample &lt;- t.test(x) # generates t-test from sample specified by 'x'
+  sample_1 &lt;- rnorm(x)
+  test_first_sample &lt;- t.test(sample_1) # generates t-test from sample specified by 'x'
   p_value_final &lt;- test_first_sample$p.value # extracts p-value from first t-test
   if(p_value_final &lt; .25 &amp; p_value_final &gt; .05){ 
-    second_sample &lt;- x + rnorm(30) 
-    test_second_sample &lt;- t.test(second_sample)
+    sample_2 &lt;- append(sample_1, rnorm(x)) 
+    test_second_sample &lt;- t.test(sample_2)
     p_value_final &lt;- test_second_sample$p.value
-  } # if else structure doubles sample if specified conditions are met and extracts new p-value
-  return(p_value_final) # returns either p-value from original t-test or t-test on doubled sample
+    return(p_value_final)
+  } else {return(p_value_final)} # if else structure doubles sample if specified conditions are met and extracts new p-value
 }</code></pre>
 <p>Now call this function 10k times and find out what happens.</p>
 <pre class="r"><code>num_sim_v2 &lt;- 10000 # creates a vector with number of t-tests to be run
@@ -492,7 +493,7 @@ print(rep_proportion_05) # prints the result</code></pre>
 p_values_v2 &lt;- rep(NA, num_sim_v2) # creates a placeholder vector (where the output of the loop will be saved) with 10000 'NA' values
 
 for (i in 1:num_sim_v2) {
-   sample &lt;- rnorm(30)
+   sample &lt;- 30
    p_value_v2 &lt;- double.sample(sample)
    p_values_v2[i] &lt;- p_value_v2
 } # for loop that runs &quot;double sample&quot; function created above on 10000 samples of n = 30 observations, randomly generated from the normal distribution
@@ -502,7 +503,7 @@ p_values_lt05_v2 &lt;- p_values_v2 &lt; 0.05 # creates a vector containing logic
 proportion_05_v2 &lt;- sum(p_values_lt05_v2 == TRUE)/10000 # divides number of p-values that are less than .05 by the total number of p-values, which in this case is 10000
 
 print(proportion_05_v2) # prints the result</code></pre>
-<pre><code>## [1] 0.0748</code></pre>
+<pre><code>## [1] 0.0755</code></pre>
 <p>Is there an inflation of false positives? How bad is it?</p>
 <blockquote>
 <p>Yes, the false positive rate calculated using the “double sample” strategy is 0.0748. Under typical sampling conditions (where the expected false positive rate is alpha = 0.05), a false positive would result for 500 samples out of 10000. Under the double sample strategy, this number increases to 748 out of 10000.</p>
