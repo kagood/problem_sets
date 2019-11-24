@@ -31,13 +31,13 @@ First, use `ggplot` to plot a histogram of the ages of children in the study. NO
 
 ```{r}
 histogram_age <- fvs %>% 
-  filter(condition == "Faces_Medium") %>% 
+  filter(condition == "Faces_Medium") %>% # this filter removes repeated ages 
   ggplot(aes(age)) +
-  geom_histogram(binwidth = 1) +
-  scale_x_continuous(breaks = seq(0, 30, by = 5)) +
-  coord_cartesian(xlim=c(0, 30)) +
-  xlab("Age (in months)") +
-  theme_few()
+  geom_histogram(binwidth = 1) + # creates histogram and adjusts binwidth appropriately
+  scale_x_continuous(breaks = seq(0, 30, by = 5)) + # sets intervals for x-axis tick labels
+  coord_cartesian(xlim=c(0, 30)) + # sets start and end points of x-axis
+  xlab("Age (in months)") + # adds custom x-axis label
+  theme_classic()
 
 print(histogram_age)
 ```
@@ -48,11 +48,12 @@ Second, make a scatter plot showing hand looking as a function of age and condit
 plot_handlooking_byage_condition <- fvs %>% 
   ggplot(aes(x = age, y = hand.look, color = condition)) +
   geom_point() +
-  geom_smooth(method = lm) + 
-  scale_x_continuous(breaks = seq(0, 30, by = 5)) +
-  xlab("Age (in months)") +
-  ylab("Hand Looking") +
-  scale_color_discrete(name = "Condition", labels = c("Faces Medium", "Faces Plus"))
+  geom_smooth(method = lm) + # adds appropriate smoothing lines
+  scale_x_continuous(breaks = seq(0, 30, by = 5)) + # sets intervals for x-axis tick labels
+  xlab("Age (in months)") + # adds custom x-axis label
+  ylab("Hand Looking") + # adds custom y-axis label
+  scale_color_discrete(name = "Condition", labels = c("Faces Medium", "Faces Plus")) + # adds custom labels to legend
+  theme_classic()
 
 
 print(plot_handlooking_byage_condition)
@@ -60,11 +61,11 @@ print(plot_handlooking_byage_condition)
 
 What do you conclude from this pattern of data?
 
-> ANSWER HERE
+> The plot above suggests that, with age, children spent more time looking at hands overall, but this was especially true in the "faces plus" condition, where backgrounds were more complex and both children and adults were featured. Thus, there seems to be an interaction between age and condition, such that, with age, children's looking at hands increases more in the "faces plus" condition than in the "faces medium" condition. 
 
 What statistical analyses would you perform here to quantify these differences?
 
-> ANSWER HERE
+> To quantify these differences, you could perform either a repeated-measures ANOVA or a linear mixed effects model, with condition entered as a repeated-measures, categorical predictor and age entered as a continous predictor. Such a model would allow for examining not only the main effects of these predictors on the dependent variable (children's hand looking), but also the effect of an interaction between these predictors (age x condition). This would allow for quantifying the difference between the increase in hand looking with age in the "faces plus" condition vs. the "faces medium" condition.
 
 
 # Part 2: Simulation
@@ -81,9 +82,11 @@ What's the proportion of "significant" results ($p < .05$) that you see?
 
 First do this using a `for` loop.
 
-Resource used for the following code: https://rpubs.com/ndphillips/47112
+> Please note that I referenced the following online resource when writing the code below: https://rpubs.com/ndphillips/47112
 
 ```{r}
+set.seed(123) # pseudo-random number generator that allows for optimal reproducibility of the rest of the code in this report
+
 num_sim <- 10000 # creates a vector with number of t-tests to be run
 
 p_values <- rep(NA, num_sim) # creates a placeholder vector (where the output of the loop will be saved) with 10000 'NA' values
@@ -104,7 +107,7 @@ print(proportion_05) # prints the result
 
 Next, do this using the `replicate` function:
 
-Resource used for the following code: https://www.stat.berkeley.edu/~s133/Random2a.html
+> Please note that I referenced the following online resource when writing the code below: https://www.stat.berkeley.edu/~s133/Random2a.html
 
 ```{r}
 p_values_rep <- replicate(10000, t.test(rnorm(30))$p.value) # creates a vector containing the p-values from 10000 t-tests run on samples of n = 30 observations, randomly generated from the normal distribution 
@@ -118,7 +121,7 @@ print(rep_proportion_05) # prints the result
 
 How does this compare to the intended false-positive rate of $\alpha=0.05$?
 
-> ANSWER
+> The answer I generated with each of the two chunks above is 0.0465, which is incredibly close to (and rounds up to) the intended false positive rate of alpha = 0.05.
 
 Ok, that was a bit boring. Let's try something more interesting - let's implement a p-value sniffing simulation, in the style of Simons, Nelson, & Simonsohn (2011).
 
@@ -128,14 +131,14 @@ First, write a function that implements this sampling regime.
 
 ```{r}
 double.sample <- function (x) {
-  test_first_sample <- t.test(x)
-  p_value_final <- test_first_sample$p.value
-  if(p_value_final < .25 & p_value_final > .05){
-    second_sample <- x + rnorm(30)
+  test_first_sample <- t.test(x) # generates t-test from sample specified by 'x'
+  p_value_final <- test_first_sample$p.value # extracts p-value from first t-test
+  if(p_value_final < .25 & p_value_final > .05){ 
+    second_sample <- x + rnorm(30) 
     test_second_sample <- t.test(second_sample)
     p_value_final <- test_second_sample$p.value
-  }
-  return(p_value_final)
+  } # if else structure doubles sample if specified conditions are met and extracts new p-value
+  return(p_value_final) # returns either p-value from original t-test or t-test on doubled sample
 }
 ```
 
@@ -150,7 +153,7 @@ for (i in 1:num_sim_v2) {
    sample <- rnorm(30)
    p_value_v2 <- double.sample(sample)
    p_values_v2[i] <- p_value_v2
-}
+} # for loop that runs "double sample" function created above on 10000 samples of n = 30 observations, randomly generated from the normal distribution
 
 p_values_lt05_v2 <- p_values_v2 < 0.05 # creates a vector containing logical values of 'true' where the p-value is less than .05 and 'false' where the p-value is equal to or greater than .05
 
@@ -161,7 +164,7 @@ print(proportion_05_v2) # prints the result
 
 Is there an inflation of false positives? How bad is it?
 
-> ANSWER
+> Yes, the false positive rate calculated using the "double sample" strategy is 0.0748. Under typical sampling conditions (where the expected false positive rate is alpha = 0.05), a false positive would result for 500 samples out of 10000. Under the double sample strategy, this number increases to 748 out of 10000. 
 
 Now modify this code so that you can investigate this "double the sample" rule in a bit more depth. In the previous question, the researcher doubles the sample only when they think they got "close" to a significant result, i.e. when their not-significant p is less than 0.25. What if the researcher was more optimistic? See what happens in these 3 other scenarios:
 
@@ -177,29 +180,31 @@ HINT 2: You may need more samples. Find out by looking at how the results change
 
 ```{r}
 
-list <- c(.5, .75, 1) # create list of p-values
+list <- c(.5, .75, 1) # creates list of p-values
 
 double_sample_v2 <- function (x, p) {
   sample_1 <- rnorm(x)
   test_sample_1 <- t.test(sample_1)
   p_value_final <- test_sample_1$p.value
   if(p_value_final < p & p_value_final > .05){
-    sample_2 <- sample_1 + rnorm(x)
+    sample_2 <- append(sample_1, rnorm(x))
     test_sample_2 <- t.test(sample_2)
     p_value_final <- test_sample_2$p.value
-  }
-  return(p_value_final)
-}
-x <- 30
-p_values_all <- replicate(10000, sapply(list, double_sample_v2, x=x))
+    return(p_value_final)
+  } else {return(p_value_final)}
+} # generates function that doubles the sample if any of the three conditions specified above are met by the initial t-test of N = 30 observations
 
-p_values_all_df <- setNames(melt(p_values_all), c("upper_p_value","iteration", "p_value"))
+x <- 30 # sets initial number of observations to be randomly pulled from a normal distribution
+
+p_values_all <- replicate(10000, sapply(list, double_sample_v2, x=x)) # applies the new 'double sample' function to the three p-values in the list created above and puts them into a new matrix
+
+p_values_all_df <- setNames(melt(p_values_all), c("upper_p_value","iteration", "p_value")) # converts matrix to data frame and names columns in this new data frame
 
 p_values_all_df <- p_values_all_df %>% 
   mutate(upper_p_value = as.factor(upper_p_value)) %>% 
   mutate(upper_p_value = ifelse(upper_p_value == '1', "p < .5", 
                             ifelse(upper_p_value == '2', "p < .75",
-                                   ifelse(upper_p_value == '3', "p < 1", NA))))
+                                   ifelse(upper_p_value == '3', "p < 1", NA)))) # relabels the three specified p-values
 
 p_values_all_df <- p_values_all_df %>% 
   mutate(significant = ifelse((p_value < .05), "TRUE", "FALSE")) # creates a column containing logical values of 'true' where the p-value is less than .05 and 'false' where the p-value is equal to or greater than .05
@@ -211,12 +216,14 @@ proportions <- p_values_all_df %>%
 print(proportions) # prints the result
 ```
 
+
 What do you conclude on the basis of this simulation? How bad is this kind of data-dependent policy?
 
-> ANSWER
+> These simulations clearly demonstrate that optional stopping inflates the false positive rate; this gets even worse as one loosens the 'rules' they use for whether or not to collect more data. For example, deciding to double the sample whenever one does not achieve a significant result (where p < .05) inflates false positives even more than deciding to only double the sample when .05 < p < .25. And the above simulations do not reflect the full extent to which optional stopping could inflate false positive rates. Imagine one still did not achieve a significant p-value after doubling the sample; they could easily double it again and keep adding participants until they had achieved a significant p-value. This would result in even higher false positive rates than the ones shown above. (Another strategy that would increase false positives is checking the data more often -- e.g., checking after every participant rather than after every 30 participants).
 
+> While the code chunks below only account for doubling the sample once, I've also included code that examines what would happen if the sample were doubled repeatedly until the result was a p-value less than .05 or greater than .25.
 
-```{r}
+```{r, eval = FALSE}
 double_sample_loop_one_p <- function (x) {
   sample_1 <- rnorm(x)
   test_sample_1 <- t.test(sample_1)
@@ -246,12 +253,10 @@ proportion_05_one_p <- sum(p_values_lt05_one_p == TRUE)/10000 # divides number o
 print(proportion_05_one_p) # prints the result
 ```
 
+> I've also included code below that evaluates false positive rates that would be achieved if the researcher 1) doubles the sample every time their pvalue is not significant, but it's less than 0.5; 2) doubles the sample every time their pvalue is not significant, but it's less than 0.75, or 3) doubles their sample every time they get ANY pvalue that is not significant. I've included loops so that, in all three cases, the sample continues to be doubled until the specified conditions are met. (I should note that this code crashed R every time I tried to run it, so I did not evalute it in this writeup.)
 
-```{r}
-
-list <- c(.5, .75, 1) # create list of p-values
-
-double_sample_loop_many_ps <- function (p, x) {
+```{r, eval = FALSE}
+double_sample_many_ps <- function (p, x) {
   sample_1 <- rnorm(x)
   test_sample_1 <- t.test(sample_1)
   p_value_final <- test_sample_1$p.value
@@ -266,7 +271,7 @@ double_sample_loop_many_ps <- function (p, x) {
 }
 
 x <- 30
-p_values_many_ps <- replicate(10000, sapply(list, double_sample_other_2, x=x))
+p_values_many_ps <- replicate(10000, sapply(list, double_sample_loop_many_ps, x=x))
 
 p_values_many_ps <- setNames(melt(p_values_many_ps), c("upper_p_value","iteration", "p_value"))
 
